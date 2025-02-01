@@ -3,6 +3,16 @@ import app from 'flarum/admin/app';
 app.initializers.add('fof-username-request', () => {
   app.extensionData
     .for('fof-username-request')
+    .registerSetting({
+      setting: 'fof-username-request.username_cost',
+      type: 'number',
+      label: app.translator.trans('fof-username-request.admin.settings.username_modals.cost'),
+    })
+    .registerSetting({
+      setting: 'fof-username-request.nickname_cost',
+      type: 'number',
+      label: app.translator.trans('fof-username-request.admin.settings.nickname_modals.cost'),
+    })
     .registerPermission(
       {
         icon: 'fa fa-user-edit',

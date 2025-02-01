@@ -79,7 +79,10 @@ return [
     (new Extend\Notification())
         ->type(Notification\RequestApprovedBlueprint::class, Api\Serializer\RequestSerializer::class, ['email'])
         ->type(Notification\RequestRejectedBlueprint::class, Api\Serializer\RequestSerializer::class, ['email']),
-
+    (new Extend\Settings())
+        ->serializeToForum('nickname_cost', 'fof-username-request.nickname_cost'),
+    (new Extend\Settings())
+        ->serializeToForum('username_cost', 'fof-username-request.username_cost'),
     (new Extend\View())
         ->namespace('fof-username-request', __DIR__.'/resources/views'),
 ];

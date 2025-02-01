@@ -16,6 +16,11 @@ use Flarum\User\UserValidator;
 use FoF\UserRequest\UsernameRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use Illuminate\Contracts\Events\Dispatcher;
+use Flarum\Settings\SettingsRepositoryInterface;
+use Mattoid\MoneyHistory\Event\MoneyHistoryEvent;
+use Flarum\Foundation\ValidationException;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 class CreateRequestHandler
 {
@@ -24,14 +29,22 @@ class CreateRequestHandler
      */
     protected $validator;
 
+    protected $settings;
+    protected $events;
+    private $translator;
+
     /**
      * CreateRequestHandler constructor.
      *
      * @param UserValidator $validator
      */
-    public function __construct(UserValidator $validator)
+    public function __construct(SettingsRepositoryInterface $settings,Dispatcher $events,UserValidator $validator)
     {
         $this->validator = $validator;
+        $this->settings = $settings;
+        $this->events = $events;
+        $this->translator = resolve(TranslatorInterface::class);
+
     }
 
     /**
@@ -52,6 +65,24 @@ class CreateRequestHandler
         $forNickname = Arr::get($command->data, 'attributes.forNickname', false);
 
         $attr = $forNickname ? 'nickname' : 'username';
+
+        $change_cost = $forNickname ? (int)$this->settings->get('fof-username-request.nickname_cost', 1) : (int)$this->settings->get('fof-username-request.username_cost', 1);
+        $change_source = $forNickname ? 'CHANGE_NICKNAME' : 'CHANGE_USERNAME';
+        $change_sourceDesc = $forNickname ? $this->translator->trans('fof-username-request.forum.nickname_modals.request.title') : $this->translator->trans('fof-username-request.forum.username_modals.request.title');
+        if($actor->id && $change_cost>0){
+            if($actor->money < $change_cost){
+                throw new ValidationException([
+                    'message' => $this->translator->trans('fof-username-request.forum.pending_requests.overtip', [
+                        'money' => $actor->money,
+                        'cost' => $change_cost
+                    ])
+                ]);
+            }
+
+            $actor->money = $actor->money - $change_cost;
+            $this->events->dispatch(new MoneyHistoryEvent($actor, -$change_cost, $change_source, $change_sourceDesc));
+            $actor->save();
+        }
 
         // Setting nickname to username by making nickname null so
         // it falls back to username.

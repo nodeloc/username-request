@@ -20,6 +20,10 @@ export default class RequestModal extends Modal {
     this.password = Stream('');
 
     this.translationPrefix = `fof-username-request.forum.${this.attrs.nickname ? 'nickname' : 'username'}_modals.request`;
+
+    this.cost = this.attrs.nickname ? app.forum.attribute('nickname_cost'):app.forum.attribute('username_cost');
+
+
   }
 
   className() {
@@ -59,6 +63,7 @@ export default class RequestModal extends Modal {
             ''
           )}
           <div className="Form-group">
+            <lable>{app.translator.trans(`${this.translationPrefix}.cost`,{cost:this.cost})}</lable>
             <input
               type="text"
               name="text"
